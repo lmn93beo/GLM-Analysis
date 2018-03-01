@@ -3,20 +3,24 @@ clear all;
 load('RajeevDataGLM_session2.mat') % 'glmtrial','unitOfTime','binSize','nTrials','binfun'
 binSize = 1;
 numPFC = 40;
-numMD = 25;
+numMD = 14;
 binfun = @(t)(t==0)+ceil(t/binSize);
-correct = arrayfun(@(x) glmtrial(x).reward,1:127);
+correct = [glmtrial.reward]; % extract the 'reward' field from glmtrial
+%arrayfun(@(x) glmtrial(x).reward,1:82); %was 127
 glmtrial = glmtrial(find(correct==1));
 
 
 
 %% Specify the fields to load
 
+% Initialize the experiment with appropriate bin size
 expt = buildGLM.initExperiment(unitOfTime, binSize);
 
+% Add some Values for the trials (context info)
 % values = context
 expt = buildGLM.registerValue(expt, 'context', 'Context');
 
+% Add timing information (cue onset and offset)
 % timings = cue on, cue off
 expt = buildGLM.registerTiming(expt, 'cueon', 'Cue Onset');
 expt = buildGLM.registerTiming(expt, 'cueoff','Cue Offset');
@@ -54,7 +58,7 @@ for i = 1:numMD
 end
 
 %% build design spec object and put data in expt
-
+%i.e load the data into the expt object
 expt.trial = glmtrial;
 dspec = buildGLM.initDesignSpec(expt);
 
@@ -86,7 +90,7 @@ end
 %% build design matrix
 
 % trialIndices = 1:nTrials;
-trialIndices = 1:length(find(correct==1));
+trialIndices = 1:sum(correct==1);
 dm = buildGLM.compileSparseDesignMatrix(dspec, trialIndices);
 
 %% Visualize the design matrix
@@ -163,7 +167,7 @@ fig = figure(3);
 kCov = 18:29;
 
 ct = 0;
-for kCov = 5:29
+for kCov = 5:18
     ct = ct+1;
     
     label = dspec.covar(kCov).label;
