@@ -1,9 +1,9 @@
 %%
-clear all;
+%clear all;
 load('RajeevDataGLM_session2.mat') % 'glmtrial','unitOfTime','binSize','nTrials','binfun'
 binSize = 1;
-numPFC = 40;
-numMD = 14;
+% numPFC = 40;
+% numMD = 14;
 binfun = @(t)(t==0)+ceil(t/binSize);
 correct = [glmtrial.reward]; % extract the 'reward' field from glmtrial
 %arrayfun(@(x) glmtrial(x).reward,1:82); %was 127
