@@ -54,13 +54,13 @@ end
 end_id = 594; % decrease in time from t = 594 to 595...
 ntrials = end_id - 1;
 start_times = Lstim.start_time(1:ntrials) + 0.1;
-end_times = Lstim.start_time(1:ntrials) + 1.1;
+end_times = Lstim.start_time(1:ntrials) + 0.9;
 deadline = Lstim.start_time(2:end_id);
 
 % Add random jitter
-jitter = 1;
+jitter = 0.1;
 start_times = start_times + jitter * rand(1, ntrials);
-end_times = end_times + jitter * rand(1, ntrials);
+end_times = end_times - jitter * rand(1, ntrials);
 
 % Define edges
 edges = [start_times, end_times];
