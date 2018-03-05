@@ -1,8 +1,27 @@
 %% Load the data
 clear all;
+
+full_load = 0;
 source = 'Z:\CheetahData\Pavarrotti mouse\Pavarrotti Mouse\STRFSessionsCombined';
 file = [source '\2017-01-23_15-36-21_STRFMeanSpike.mat'];
-load(file);
+file_short = [source '\2017-01-23_15-36-21_STRFMeanSpike_short.mat'];
+
+
+if full_load
+    load(file);
+
+    % Save only the variables we need
+    save(file_short, 'num_seq', 'Lstim', 'unit1', 'unit2', 'unit3', 'unit4', ...
+        'unit5', 'unit6', 'unit7', 'unit8', ...
+        'unit9', 'unit10', 'unit11', 'unit12', ...
+        'unit13', 'unit14', 'unit15', 'unit16', ...
+        'unit17', 'unit18', 'unit19', 'unit20', ...
+        'unit21', 'unit22', 'unit23', 'unit24', ...
+        'unit25', 'unit26', 'unit27', 'unit28', ...
+        'unit29');
+else
+    load(file_short);
+end
 
 %% Figuring out which unit is MGB/A1
 % num_seq: number of the channels
@@ -12,9 +31,9 @@ load(file);
 MGB_channels = 1:9;
 A1_channels = 10:18;
 
+% Define which unit is MGB and which is A1
 MGB_units = [];
 A1_units = [];
-
 
 for i = 1:size(num_seq, 1)
     if ~isempty(find(MGB_channels == num_seq(i, 1), 1))
@@ -24,20 +43,23 @@ for i = 1:size(num_seq, 1)
     end
 end
 
+
+
 % Define start and end of 'trials'
 end_id = 594; % decrease in time from t = 594 to 595...
-start_times = Lstim.start_time(1:end_id-1);
-end_times = Lstim.start_time(2:end_id);
+ntrials = end_id - 1;
+start_times = Lstim.start_time(1:ntrials) + 0.1;
+end_times = Lstim.start_time(1:ntrials) + 1.1;
+deadline = Lstim.start_time(2:end_id);
 
 % Add random jitter
 jitter = 1;
-start_times = start_times + 1.1 + rand;
-end_times = end_times - 0.1 - rand;
+start_times = start_times + jitter * rand(1, ntrials);
+end_times = end_times + jitter * rand(1, ntrials);
 
-% Group channels into trials
+% Define edges
 edges = [start_times, end_times];
 edges = sort(edges);
-groups = discretize(unit1, edges);
 
 %% Start compiling units
 glmtrial = struct;
@@ -71,8 +93,12 @@ for trial = 1 : end_id - 1
 
         eval(['trial_vals = ', var_name, '(groups == trial * 2 - 1);']);
         %trial_vals = unit1(groups == trial * 2 - 1)';
+        
+        % Some assertions just to make sure
         assert(all(trial_vals > start_times(trial)) && ...
-            all(trial_vals < end_times(trial)));
+            all(trial_vals < deadline(trial)));
+        assert(all(trial_vals - start_times(trial) < glmtrial(trial).duration));
+        
         glmtrial(trial).(unit_name) = ...
             1000 * (trial_vals - start_times(trial));
     end
@@ -89,9 +115,11 @@ expt = buildGLM.initExperiment(unitOfTime, binSize);
 % spike trains
 for i = 1:num_units
     if ~isempty(find(MGB_channels == num_seq(i, 1), 1)) %MGB unit
+        disp(['MGBUnit' num2str(i)]);
         expt = buildGLM.registerSpikeTrain(expt, ...
             ['MGBUnit' num2str(i)], 'MGB Spike Train');
     elseif ~isempty(find(A1_channels == num_seq(i, 1), 1)) %A1 unit
+        disp(['A1Unit' num2str(i)]);
         expt = buildGLM.registerSpikeTrain(expt, ...
             ['A1Unit' num2str(i)], 'A1 Spike Train');
     end
@@ -105,6 +133,7 @@ dspec = buildGLM.initDesignSpec(expt);
 % Add coupling variable from A1 units
 for i = 1:num_units
     if ~isempty(find(MGB_channels == num_seq(i, 1), 1))
+        disp(['Coupling from MGBUnit' num2str(i)]);
         dspec = buildGLM.addCovariateSpiketrain(dspec, ...
             ['MGBUnit' num2str(i)], ['MGBUnit' num2str(i)], ...
             ['Coupling from MGB' num2str(i)]);
@@ -119,7 +148,7 @@ dm = buildGLM.compileSparseDesignMatrix(dspec, trialIndices);
 
 
 %% Get dependent variable
-y = buildGLM.getBinnedSpikeTrain(expt, 'A1Unit21', dm.trialIndices);
+y = buildGLM.getBinnedSpikeTrain(expt, 'A1Unit20', dm.trialIndices);
 
 %% Least squares for initialization
 tic
@@ -134,8 +163,10 @@ lfunc = @(w)(glms.neglog.poisson(w, dm.X, y, fnlin)); % cost/loss function
 opts = optimset('Algorithm', 'trust-region-reflective', ...
     'GradObj', 'on', 'Hessian','on');
 
+tic
 [wml, nlogli, exitflag, ostruct, grad, hessian] = fminunc(lfunc, wInit, opts);
 wvar = diag(inv(hessian));
+toc
 
 %% Visualize the weights
 ws = buildGLM.combineWeights(dm, wml);
@@ -150,4 +181,10 @@ for i = 1:19
     plot(time,exp(ws.(unit).data));
     hold on;
 end
+
+legend('MGBUnit1', 'MGBUnit2', 'MGBUnit3', 'MGBUnit4', ...
+    'MGBUnit5', 'MGBUnit6', 'MGBUnit7', 'MGBUnit8',...
+    'MGBUnit9', 'MGBUnit10', 'MGBUnit11', 'MGBUnit12',...
+    'MGBUnit13', 'MGBUnit14', 'MGBUnit15', 'MGBUnit16',...
+    'MGBUnit17', 'MGBUnit18', 'MGBUnit19');
 
