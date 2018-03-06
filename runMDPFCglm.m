@@ -2,8 +2,8 @@
 %clear all;
 load('RajeevDataGLM_session2.mat') % 'glmtrial','unitOfTime','binSize','nTrials','binfun'
 binSize = 1;
-% numPFC = 40;
-% numMD = 14;
+numPFC = 40;
+numMD = 14;
 binfun = @(t)(t==0)+ceil(t/binSize);
 correct = [glmtrial.reward]; % extract the 'reward' field from glmtrial
 %arrayfun(@(x) glmtrial(x).reward,1:82); %was 127
@@ -31,11 +31,11 @@ expt = buildGLM.registerTiming(expt, 'cueoff','Cue Offset');
 
 % rule is value
 expt = buildGLM.registerTiming(expt, 'vision', 'Attend to Vision Rule');
-expt = buildGLM.registerTiming(expt, 'audition', 'Attend to Audition Rule');
+expt = buildGLM.registerTiming(expt, 'audition', 'Attend to Audition Rule');  % <----- change this
 
 % timings = lpf, hpf
 expt = buildGLM.registerTiming(expt, 'lowpasscue', 'Low Pass Filter Cue');
-expt = buildGLM.registerTiming(expt, 'highpasscue', 'High Pass Filter Cue');
+expt = buildGLM.registerTiming(expt, 'highpasscue', 'High Pass Filter Cue');  % <----- change this
 
 % timing = decision
 expt = buildGLM.registerTiming(expt, 'choice', 'Choice Time');
@@ -47,7 +47,7 @@ expt = buildGLM.registerValue(expt, 'type', 'Trial type');
 expt = buildGLM.registerTiming(expt, 'R1C1', 'Rule 1, Context 1');
 expt = buildGLM.registerTiming(expt, 'R2C1', 'Rule 2, Context 1');
 expt = buildGLM.registerTiming(expt, 'R1C2', 'Rule 1, Context 2');
-expt = buildGLM.registerTiming(expt, 'R2C2', 'Rule 2, Context 2');
+expt = buildGLM.registerTiming(expt, 'R2C2', 'Rule 2, Context 2');  % <----- change this
 
 % spike trains
 for i = 1:numPFC
@@ -69,7 +69,7 @@ offset = 0;
 dspec = buildGLM.addCovariateTiming(dspec, 'R1C1', [], [], bs, offset);
 dspec = buildGLM.addCovariateTiming(dspec, 'R2C1', [], [], bs, offset);
 dspec = buildGLM.addCovariateTiming(dspec, 'R1C2', [], [], bs, offset);
-dspec = buildGLM.addCovariateTiming(dspec, 'R2C2', [], [], bs, offset);
+dspec = buildGLM.addCovariateTiming(dspec, 'R2C2', [], [], bs, offset);  % <----- change this
 
 %% choice
 % MD - motor prep activity predictive of choice

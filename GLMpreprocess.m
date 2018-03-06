@@ -187,12 +187,12 @@ for i = 1:nTrials
     glmtrial(i).R1C1 = [];
     glmtrial(i).R2C1 = [];
     glmtrial(i).R1C2 = [];
-    glmtrial(i).R2C2 = [];
+    glmtrial(i).R2C2 = [];  % <----- change this depending on number of conditions... 
     
     % cue onset and offset - cue onset always at 0 ms and cue offset always
     % at 100 ms
     cueon = (0-trial_start_ms); % ms
-    cueoff = (100 - trial_start_ms); % ms
+    cueoff = (100 - trial_start_ms); % <----- change this
     
     glmtrial(i).cueon = cueon; % binfun(cueon);
     glmtrial(i).cueoff = cueoff; % binfun(cueoff);
