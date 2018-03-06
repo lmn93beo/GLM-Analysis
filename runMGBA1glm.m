@@ -53,12 +53,12 @@ end
 % Define start and end of 'trials'
 end_id = 594; % decrease in time from t = 594 to 595...
 ntrials = end_id - 1;
-start_times = Lstim.start_time(1:ntrials) + 0.1;
-end_times = Lstim.start_time(1:ntrials) + 0.9;
+start_times = Lstim.start_time(1:ntrials);
+end_times = Lstim.start_time(1:ntrials)+1;
 deadline = Lstim.start_time(2:end_id);
 
 % Add random jitter
-jitter = 0.1;
+jitter = 0;
 start_times = start_times + jitter * rand(1, ntrials);
 end_times = end_times - jitter * rand(1, ntrials);
 
@@ -88,19 +88,26 @@ num_responsive = numel(numUnits);
 
 % Define trial structures
 for trial = 1 : end_id - 1
+    
     % Store duration in ms
     glmtrial(trial).duration = 1000 * (end_times(trial) - start_times(trial));
     
     % Store spike timings
     for unit_id = 1 : num_responsive
-        % Define variable name and unit name
+        if trial == 4 && unit_id == 1
+            disp('here');
+        end
+        % Define vaSriable name and unit name
         var_name = var_names{unit_id};
         unit_name = unit_names{unit_id};
     
         % Extract spikes of unit in the trial and put into glmtrial
-        eval(['groups = discretize(', var_name, ', edges);']);
-
-        eval(['trial_vals = ', var_name, '(groups == trial * 2 - 1);']);
+        eval(['trial_vals = ' var_name '(' var_name '> start_times(trial) & '...
+            var_name '< end_times(trial));']);
+        
+%         eval(['groups = discretize(', var_name, ', edges);']);
+% 
+%         eval(['trial_vals = ', var_name, '(groups == trial * 2 - 1);']);
         %trial_vals = unit1(groups == trial * 2 - 1)';
         
         % Some assertions just to make sure
