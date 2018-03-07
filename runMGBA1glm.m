@@ -41,26 +41,29 @@ MGB_channels = 1:9;
 A1_channels = 10:18;
 
 % Define which unit is MGB and which is A1
-MGB_units = [];
-A1_units = [];
+responsive_only = 1;
 
-for i = 1:size(num_seq, 1)
-    % unit is MGB && is auditory-responsive
+if responsive_only
+    % unit is MGB or A1 && is auditory-responsive
     MGB_units = numUnits(numUnits <= 19);
     A1_units = numUnits(numUnits > 19);
+else
+    % TODO: Hard coded for now...
+    MGB_units = 1:19;
+    A1_units = 20:29;
 end
 
 % Define start and end of 'trials'
 end_id = 594; % decrease in time from t = 594 to 595...
 ntrials = end_id - 1;
-start_times = Lstim.start_time(1:ntrials);
-end_times = Lstim.start_time(1:ntrials)+1;
+start_times = Lstim.start_time(1:ntrials) + 0.1;
+end_times = Lstim.start_time(1:ntrials) + 1;
 deadline = Lstim.start_time(2:end_id);
 
 % Add random jitter
-jitter = 0;
-start_times = start_times + jitter * rand(1, ntrials);
-end_times = end_times - jitter * rand(1, ntrials);
+jitter = rand(1, ntrials) * 0.1;
+start_times = start_times - jitter;
+end_times = end_times - jitter;
 
 % Define edges
 edges = [start_times, end_times];
@@ -84,7 +87,7 @@ for unit_id = 1 : num_units
     end
 end
 
-num_responsive = numel(numUnits);
+num_responsive = numel(MGB_units) + numel(A1_units);
 
 % Define trial structures
 for trial = 1 : end_id - 1
@@ -94,21 +97,13 @@ for trial = 1 : end_id - 1
     
     % Store spike timings
     for unit_id = 1 : num_responsive
-        if trial == 4 && unit_id == 1
-            disp('here');
-        end
-        % Define vaSriable name and unit name
+        % Define variable name and unit name
         var_name = var_names{unit_id};
         unit_name = unit_names{unit_id};
     
         % Extract spikes of unit in the trial and put into glmtrial
         eval(['trial_vals = ' var_name '(' var_name '> start_times(trial) & '...
             var_name '< end_times(trial));']);
-        
-%         eval(['groups = discretize(', var_name, ', edges);']);
-% 
-%         eval(['trial_vals = ', var_name, '(groups == trial * 2 - 1);']);
-        %trial_vals = unit1(groups == trial * 2 - 1)';
         
         % Some assertions just to make sure
         assert(all(trial_vals > start_times(trial)) && ...
@@ -123,12 +118,15 @@ end
 %% Build a GLM object
 % Initialize the experiment with appropriate bin size
 unitOfTime = 'ms';
-binSize = 1;
+binSize = 3;
 
 expt = buildGLM.initExperiment(unitOfTime, binSize);
 
+% Add stimulus timing information
+% expt = buildGLM.registerTiming(expt, 'cueon', 'Cue Onset');
+% expt = buildGLM.registerTiming(expt, 'cueoff','Cue Offset');
+
 % Spike trains
-% spike trains
 % MGB units
 for i = 1:numel(MGB_units)
     disp(['MGBUnit' num2str(MGB_units(i))]);
@@ -191,13 +189,15 @@ for i = 1:numel(MGB_units)
     unit = ['MGBUnit' num2str(MGB_units(i))];
     weight = ws.(unit).data;
     time = ws.(unit).tr;
-    plot(time,exp(ws.(unit).data));
+    plot(time,(ws.(unit).data));
     hold on;
 end
 
-legend('MGBUnit1', 'MGBUnit2', 'MGBUnit3', 'MGBUnit4', ...
-    'MGBUnit5', 'MGBUnit6', 'MGBUnit7', 'MGBUnit8',...
-    'MGBUnit9', 'MGBUnit10', 'MGBUnit11', 'MGBUnit12',...
-    'MGBUnit13', 'MGBUnit14', 'MGBUnit15', 'MGBUnit16',...
-    'MGBUnit17', 'MGBUnit18', 'MGBUnit19');
+field_names = fieldnames(glmtrial);
+legend(field_names(2:end));
+% legend('MGBUnit1', 'MGBUnit2', 'MGBUnit3', 'MGBUnit4', ...
+%     'MGBUnit5', 'MGBUnit6', 'MGBUnit7', 'MGBUnit8',...
+%     'MGBUnit9', 'MGBUnit10', 'MGBUnit11', 'MGBUnit12',...
+%     'MGBUnit13', 'MGBUnit14', 'MGBUnit15', 'MGBUnit16',...
+%     'MGBUnit17', 'MGBUnit18', 'MGBUnit19');
 
