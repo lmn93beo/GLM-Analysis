@@ -19,7 +19,7 @@ for t = 1 : max(size(SpikeTimesCell));
     
 end;
 
-ylim( [1,t] ); xlim( [-0.5, 1.5] );
+%ylim( [1,t] ); xlim( [-0.5, 1.5] );
 set(gca,'tickdir','out', 'yaxislocation','left'); box off;
 
 end;
