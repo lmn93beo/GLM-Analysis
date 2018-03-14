@@ -2,8 +2,13 @@
 clear all;
 
 full_load = 0;
-source = 'Z:\CheetahData\Pavarrotti mouse\Pavarrotti Mouse\STRFSessionsCombined';
-file = [source '\2017-01-24_11-30-27_STRFMeanSpike.mat'];
+source = 'Z:\CheetahData\Pavarrotti mouse\Pavarrotti Mouse\Session 1\';
+file = [source '2017-01-23_15-36-21_STRFMeanSpike.mat'];
+unitA = 5;
+unitB = 28;
+
+binSize = 1;
+binfun = @(t)(t==0)+ceil(t/binSize);
 
 
 if full_load
@@ -20,7 +25,7 @@ if full_load
 %         'unit29');
 else
     load(file, 'num_seq', 'Lstim', 'numUnits',...
-        'unit1', 'unit12');
+        sprintf('unit%d', unitA), sprintf('unit%d', unitB));
 end
 
 %% Figuring out which unit is MGB/A1
@@ -47,9 +52,9 @@ end
 
 % Define start and end of 'trials'
 end_id = 594; % decrease in time from t = 594 to 595...
-ntrials = end_id - 1;
-start_times = Lstim.start_time(1:ntrials) - 1;
-end_times = Lstim.start_time(1:ntrials) + 2;
+ntrials = 100;
+start_times = Lstim.start_time(1:ntrials);
+end_times = Lstim.start_time(1:ntrials) + 1;
 deadline = Lstim.start_time(2:end_id);
 
 % Add random jitter
@@ -64,17 +69,27 @@ edges = sort(edges);
 %% Start compiling units
 glmtrial = struct;
 
+
+
 % Define trial structures
-for trial = 1:end_id-1
+for trial = 1:ntrials
     
     % Store duration in ms
     glmtrial(trial).duration = 1000 * (end_times(trial) - start_times(trial));
+    
+    glmtrial(trial).cueon = 1000;
+    glmtrial(trial).cueoff = 2000;
  
     % Store spike timings
-    trial_vals1 = unit1(unit1 > start_times(trial) & unit1 < end_times(trial));
-    trial_vals12 = unit12(unit12 > start_times(trial) & unit12 < end_times(trial));
-    glmtrial(trial).MGBUnit1 = (trial_vals1 - start_times(trial)) * 1000;
-    glmtrial(trial).A1Unit12 = (trial_vals12 - start_times(trial)) * 1000;
+    cmdA = sprintf('trial_valsA = unit%d(unit%d > start_times(trial) & unit%d < end_times(trial));', ...
+        unitA, unitA, unitA);
+    cmdB = sprintf('trial_valsB = unit%d(unit%d > start_times(trial) & unit%d < end_times(trial));',...
+        unitB, unitB, unitB);
+    eval(cmdA);
+    eval(cmdB);
+    
+    glmtrial(trial).MGBUnitA = (trial_valsA - start_times(trial)) * 1000;
+    glmtrial(trial).A1UnitB = (trial_valsB - start_times(trial)) * 1000;
 end
 
 %% Build a GLM object
@@ -87,11 +102,11 @@ param.mouse = 'MouseX';
 
 expt = buildGLM.initExperiment(unitOfTime, binSize, [], param);
 
+expt = buildGLM.registerTiming(expt, 'cueon', 'Cue Onset');
+expt = buildGLM.registerTiming(expt, 'cueoff','Cue Offset');
 
-expt = buildGLM.registerSpikeTrain(expt, 'A1Unit12', 'Our Neuron'); % Spike train!!!
-expt = buildGLM.registerSpikeTrain(expt, 'MGBUnit1', 'Neighbor Neuron');
-
-
+expt = buildGLM.registerSpikeTrain(expt, 'A1UnitB', 'Our Neuron'); % Spike train!!!
+expt = buildGLM.registerSpikeTrain(expt, 'MGBUnitA', 'Neighbor Neuron');
 
 expt.trial = glmtrial;
 
@@ -100,11 +115,11 @@ dspec = buildGLM.initDesignSpec(expt);
 %binfun = @(t)(t==0)+ceil(t/binSize);
 
 % Add covariate timing
-%bs = basisFactory.makeSmoothTemporalBasis('raised cosine', 1000, 25, binfun);
+bs = basisFactory.makeSmoothTemporalBasis('raised cosine', 1000, 10, binfun);
 % bs = basisFactory.makeSmoothTemporalBasis('boxcar', 600, 16, binfun);
 %offset = 100;
-%dspec = buildGLM.addCovariateTiming(dspec, 'cueon', [], [], bs, offset);
-%dspec = buildGLM.addCovariateBoxcar(dspec, 'sound', 'cueon', 'cueoff', 'Sound stim');
+dspec = buildGLM.addCovariateTiming(dspec, 'cueon', [], [], bs, 0);
+% dspec = buildGLM.addCovariateBoxcar(dspec, 'sound', 'cueon', 'cueoff', 'Sound stim');
 
 
 % Add coupling variable from MGB units
@@ -114,17 +129,18 @@ dspec = buildGLM.initDesignSpec(expt);
 %         ['MGBUnit' num2str(MGB_units(i))], ['MGBUnit' num2str(MGB_units(i))], ...
 %         ['Coupling from MGB' num2str(MGB_units(i))]);
 % end
-dspec = buildGLM.addCovariateSpiketrain(dspec, 'coupling', 'MGBUnit1', 'Coupling from neuron 2');
+dspec = buildGLM.addCovariateSpiketrain(dspec, 'coupling', 'MGBUnitA', 'Coupling from neuron 2');
 
 % Self history
-dspec = buildGLM.addCovariateSpiketrain(dspec, 'hist', 'A1Unit12', 'History filter');
+%dspec = buildGLM.addCovariateSpiketrain(dspec, 'hist', 'A1Unit12', 'History filter');
 
 % Design matrix
-trialIndices = 1:end_id-1;
+trialIndices = 1:100
+
 dm = buildGLM.compileSparseDesignMatrix(dspec, trialIndices);
 
 %% Get dependent variable
-y = buildGLM.getBinnedSpikeTrain(expt, 'A1Unit12', dm.trialIndices);
+y = buildGLM.getBinnedSpikeTrain(expt, 'A1UnitB', dm.trialIndices);
 
 %% Least squares for initialization
 tic
@@ -143,7 +159,7 @@ tic
 [wml, nlogli, exitflag, ostruct, grad, hessian] = fminunc(lfunc, wInit, opts);
 wvar = diag(inv(hessian));
 toc
-
+    LL = lfunc(wml)
 %% Visualize the weights
 ws = buildGLM.combineWeights(dm, wml);
 wvar = buildGLM.combineWeights(dm, wvar);
@@ -152,7 +168,7 @@ wvar = buildGLM.combineWeights(dm, wvar);
 figure;
 
 % Plot the result
-for i = 1
+for i =2
     unit = dspec.covar(i).label;
     weight = ws.(unit).data;
     time = ws.(unit).tr;
