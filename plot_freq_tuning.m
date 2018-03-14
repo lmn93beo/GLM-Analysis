@@ -2,8 +2,8 @@
 clear all;
 
 full_load = 1;
-source = 'Z:\CheetahData\Pavarrotti mouse\Pavarrotti Mouse\STRFSessionsCombined';
-file = [source '\2017-01-23_15-36-21_STRFMeanSpike'];
+source = 'Z:\CheetahData\Pavarrotti mouse\Pavarrotti Mouse\Session 1\';
+file = [source '2017-01-23_15-36-21_STRFMeanSpike.mat'];
 
 
 if full_load
@@ -36,13 +36,13 @@ figure;
 for i = 1 : numel(numUnits)
     cellNum = numUnits(i);
     
-    cmd = sprintf('strf1 = STRFSmoCell%dNL1;', cellNum);
+    cmd = sprintf('strf1 = STRFRawCell%dNL1;', cellNum);
     eval(cmd);
     
-    cmd = sprintf('strf2 = STRFSmoCell%dNL2;', cellNum);
+    cmd = sprintf('strf2 = STRFRawCell%dNL2;', cellNum);
     eval(cmd);
     
-    cmd = sprintf('strf3 = STRFSmoCell%dNL3;', cellNum);
+    cmd = sprintf('strf3 = STRFRawCell%dNL3;', cellNum);
     eval(cmd);
     
     % Collapse over columns by summing
