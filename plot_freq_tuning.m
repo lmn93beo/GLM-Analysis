@@ -8,16 +8,6 @@ file = [source '2017-01-23_15-36-21_STRFMeanSpike.mat'];
 
 if full_load
     load(file);
-
-    % Save only the variables we need
-%     save(file_short, 'num_seq', 'Lstim', 'unit1', 'unit2', 'unit3', 'unit4', ...
-%         'unit5', 'unit6', 'unit7', 'unit8', ...
-%         'unit9', 'unit10', 'unit11', 'unit12', ...
-%         'unit13', 'unit14', 'unit15', 'unit16', ...
-%         'unit17', 'unit18', 'unit19', 'unit20', ...
-%         'unit21', 'unit22', 'unit23', 'unit24', ...
-%         'unit25', 'unit26', 'unit27', 'unit28', ...
-%         'unit29');
 else
     load(file, 'num_seq', 'Lstim', 'numUnits',...
         'unit1', 'unit12');
@@ -33,16 +23,19 @@ strfs = {STRFSmoCell1NL1, STRFSmoCell2NL1, STRFSmoCell3NL1, STRFSmoCell4NL1,...
     STRFSmoCell27NL1, STRFSmoCell28NL1};
 
 figure;
+
+strf_type = 'STRFSmo';
+
 for i = 1 : numel(numUnits)
     cellNum = numUnits(i);
     
-    cmd = sprintf('strf1 = STRFRawCell%dNL1;', cellNum);
+    cmd = sprintf('strf1 = %sCell%dNL1;', strf_type, cellNum);
     eval(cmd);
     
-    cmd = sprintf('strf2 = STRFRawCell%dNL2;', cellNum);
+    cmd = sprintf('strf2 = %sCell%dNL2;', strf_type, cellNum);
     eval(cmd);
     
-    cmd = sprintf('strf3 = STRFRawCell%dNL3;', cellNum);
+    cmd = sprintf('strf3 = %sCell%dNL3;', strf_type, cellNum);
     eval(cmd);
     
     % Collapse over columns by summing
@@ -56,15 +49,25 @@ for i = 1 : numel(numUnits)
     [~,posMax3] = max(strfCols3);
 
     % Plot the frequency tuning at this maximum
-    freq_tuning1 = strf1(:, posMax1);
-    freq_tuning2 = strf2(:, posMax2);
-    freq_tuning3 = strf3(:, posMax3);
+%     freq_tuning1 = strf1(:, posMax1);
+%     freq_tuning2 = strf2(:, posMax2);
+%     freq_tuning3 = strf3(:, posMax3);
+    [U1,~,~] = svd(strf1);
+    [U2,~,~] = svd(strf2);
+    [U3,~,~] = svd(strf3);
+    
+    freq_tuning1 = U1(:,1);
+    freq_tuning2 = U2(:,1);
+    freq_tuning3 = U3(:,1);
+
+
     
     subplot(9, 2, i);
     plot(freq_tuning1);
     hold on;
     plot(freq_tuning2);
     plot(freq_tuning3);
+    %ylim([-5, 5]);
     
     if cellNum <= 19
         title(sprintf('MGBUnit%d', cellNum));
@@ -72,5 +75,9 @@ for i = 1 : numel(numUnits)
         title(sprintf('A1Unit%d', cellNum));
     end
     %hold on;
+    
+    h = refline(0, 0);
+    set(h, 'LineStyle', '--', 'Color', 'k');
+    
 end
 
