@@ -3,3 +3,6 @@
 *.fig
 *.asv
 
+# Single folders
+*/
+
