@@ -1,9 +1,6 @@
-
-
-
 function properties = extractProps(filter)
 
-filter_crop = filter(1:15);
+filter_crop = filter(1:50);
 
 properties.PTR = max(exp(filter_crop))-min(exp(filter_crop));
 properties.InhibSubfield = trapz( filter_crop( filter_crop < 0) );
