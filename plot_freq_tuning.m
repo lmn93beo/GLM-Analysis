@@ -24,38 +24,60 @@ end
 
 figure;
 
+method = 'maxcol';
 strf_type = 'STRFSmo';
+type = 'NL';
 
 for i = 1 : numel(numUnits)
     cellNum = numUnits(i);
     
-    cmd = sprintf('strf1 = %sCell%dNL1Post;', strf_type, cellNum);
+    cmd = sprintf('strf1 = %sCell%d%s1Post;', strf_type, cellNum, type);
     eval(cmd);
     
-    cmd = sprintf('strf2 = %sCell%dNL2Post;', strf_type, cellNum);
+    cmd = sprintf('strf2 = %sCell%d%s2Post;', strf_type, cellNum, type);
     eval(cmd);
     
-    cmd = sprintf('strf3 = %sCell%dNL3Post;', strf_type, cellNum);
+    cmd = sprintf('strf3 = %sCell%d%s3Post;', strf_type, cellNum, type);
     eval(cmd);
 
     % Plot the frequency tuning at this maximum
-    [U1,~,~] = svd(strf1);
-    [U2,~,~] = svd(strf2);
-    [U3,~,~] = svd(strf3);
-    
-    freq_tuning1 = U1(:,1);
-    freq_tuning2 = U2(:,1);
-    freq_tuning3 = U3(:,1);
-    
-    % Flip if corr is negative
-    if corr(freq_tuning1, freq_tuning2) < 0
-        freq_tuning2 = freq_tuning2 * -1;
-    end
-    
-    if corr(freq_tuning1, freq_tuning3) < 0
-        freq_tuning3 = freq_tuning3 * -1;
-    end
+    if strcmp(method, 'svd')
+        [U1,~,~] = svd(strf1);
+        [U2,~,~] = svd(strf2);
+        [U3,~,~] = svd(strf3);
 
+        freq_tuning1 = U1(:,1);
+        freq_tuning2 = U2(:,1);
+        freq_tuning3 = U3(:,1);
+        
+        % Flip if corr is negative
+        if corr(freq_tuning1, freq_tuning2) < 0
+            freq_tuning2 = freq_tuning2 * -1;
+        end
+
+        if corr(freq_tuning1, freq_tuning3) < 0
+            freq_tuning3 = freq_tuning3 * -1;
+        end
+
+        
+    elseif strcmp(method, 'maxcol')
+        strfCols1 = sum(strf1, 1);
+        [~,posMax1] = max(strfCols1);
+
+        strfCols2 = sum(strf2, 1);
+        [~,posMax2] = max(strfCols2);
+     
+        strfCols3 = sum(strf3, 1);
+        [~,posMax3] = max(strfCols3);
+ 
+ 
+     % Plot the frequency tuning at this maximum
+        freq_tuning1 = strf1(:, posMax1);
+        freq_tuning2 = strf2(:, posMax2);
+        freq_tuning3 = strf3(:, posMax3);
+    end
+        
+    
     
     subplot(9, 2, i);
     plot(freq_tuning1);
